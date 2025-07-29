@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QUICK JOB CALCULATOR - SQFT & LENGTH</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #000;
+      color: #39ff14;
+      padding: 2rem;
+      max-width: 700px;
+      margin: auto;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 200%; height: 200%;
+      background:
+        repeating-linear-gradient(0deg, #0f0 0 1px, transparent 1px 40px),
+        repeating-linear-gradient(90deg, #0f0 0 1px, transparent 1px 40px);
+      opacity: 0.05;
+      z-index: -1;
+      animation: moveGrid 60s linear infinite;
+    }
+    @keyframes moveGrid {
+      from { transform: translate(0,0); }
+      to { transform: translate(-40px,-40px); }
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      animation: glitchPulse 2s infinite alternate;
+      margin-bottom: 2rem;
+    }
+    @keyframes glitchPulse {
+      0%, 100% {
+        text-shadow:
+          0 0 5px #39ff14,
+          0 0 10px #39ff14,
+          0 0 20px #39ff14,
+          0 0 30px #0f0;
+        color: #39ff14;
+      }
+      50% {
+        text-shadow:
+          0 0 10px #00ff00,
+          0 0 20px #00ff00,
+          0 0 40px #00ff00,
+          0 0 60px #0f0;
+        color: #00ff00;
+      }
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      background: #000;
+      border: 1px solid #39ff14;
+      color: #39ff14;
+      font-size: 1rem;
+      border-radius: 5px;
+      transition: box-shadow 0.3s;
+    }
+    input:hover, select:hover {
+      animation: glowPulse 2s infinite alternate;
+    }
+    @keyframes glowPulse {
+      0% {
+        box-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14;
+      }
+      100% {
+        box-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+      }
+    }
+    button {
+      display: block;
+      margin: 2rem auto 1rem;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      background: #000;
+      color: #39ff14;
+      border: 2px solid #39ff14;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 10px #39ff14;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      animation: glowPulse 2s infinite alternate;
+      transform: scale(1.05);
+    }
+    #result, #totalLength {
+      font-size: 1.75rem;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    #history {
+      margin-top: 2rem;
+      font-size: 1rem;
+    }
+    #history ul {
+      list-style-type: disc;
+      padding-left: 1.2rem;
+    }
+    #history li {
+      margin-bottom: 0.75rem;
+    }
+    #footer-credit {
+      position: fixed;
+      bottom: 8px;
+      right: 12px;
+      font-size: 0.75rem;
+      color: #39ff14;
+      font-family: 'Courier New', monospace;
+      opacity: 0.5;
+      user-select: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>QUICK JOB CALCULATOR - SQFT & LENGTH</h1>
+
+  <label for="jobName">Job # / Name:</label>
+  <input type="text" id="jobName" />
+
+  <label for="unit">Units:</label>
+  <select id="unit">
+    <option value="in">Inches</option>
+    <option value="ft">Feet</option>
+    <option value="yd">Yards</option>
+    <option value="mm">Millimeters</option>
+    <option value="m">Meters</option>
+  </select>
+
+  <label for="width">Width:</label>
+  <input type="number" id="width" />
+
+  <label for="length">Length:</label>
+  <input type="number" id="length" />
+
+  <label for="quantity">Quantity:</label>
+  <input type="number" id="quantity" value="1" />
+
+  <button id="calcBtn">Calculate</button>
+
+  <div id="result"></div>
+  <div id="totalLength"></div>
+
+  <div id="history">
+    <h2>Previous Calculations</h2>
+    <ul id="historyList"></ul>
+  </div>
+
+  <div id="footer-credit">Created by Damian Ferchak / Chat GPT</div>
+
+  <script>
+    const historyLog = [];
+
+    const convertToInches = (value, unit) => {
+      if (unit === 'ft') return value * 12;
+      if (unit === 'yd') return value * 36;
+      if (unit === 'mm') return value / 25.4;
+      if (unit === 'm') return value * 39.3701;
+      return value; // inches
+    };
+
+    const inchesToFeetAndInches = (inches) => {
+      const feet = Math.floor(inches / 12);
+      const remainingInches = (inches % 12).toFixed(2);
+      return `${feet}' ${remainingInches}"`;
+    };
+
+    const calculateSquareFootage = () => {
+      const width = parseFloat(document.getElementById('width').value);
+      const length = parseFloat(document.getElementById('length').value);
+      const quantity = parseInt(document.getElementById('quantity').value);
+      const unit = document.getElementById('unit').value;
+      const jobName = document.getElementById('jobName').value.trim();
+
+      if (isNaN(width) || isNaN(length) || isNaN(quantity) || quantity < 1) {
+        document.getElementById('result').textContent = 'Please enter valid numbers.';
+        document.getElementById('totalLength').textContent = '';
+        return;
+      }
+
+      const widthIn = convertToInches(width, unit);
+      const lengthIn = convertToInches(length, unit);
+      const sqft = (widthIn * lengthIn) / 144;
+      const totalSqft = sqft * quantity;
+
+      const totalLenOriginal = length * quantity;
+
+      let totalLenDisplay = '';
+      if (unit === 'in' || unit === 'ft' || unit === 'yd') {
+        const totalLenInches = convertToInches(totalLenOriginal, unit);
+        totalLenDisplay = `Total Length: ${inchesToFeetAndInches(totalLenInches)}`;
+      } else if (unit === 'mm') {
+        totalLenDisplay = `Total Length: ${totalLenOriginal.toFixed(2)} mm`;
+      } else if (unit === 'm') {
+        totalLenDisplay = `Total Length: ${totalLenOriginal.toFixed(2)} m`;
+      }
+
+      document.getElementById('result').textContent = `Total Square Footage: ${totalSqft.toFixed(2)} sq ft`;
+      document.getElementById('totalLength').textContent = totalLenDisplay;
+
+      const now = new Date();
+      const timeStamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+      const entry = `${jobName || 'Untitled Job'} – Qty: ${quantity} – ${totalSqft.toFixed(2)} sq ft – ${totalLenDisplay} – ${timeStamp}`;
+      historyLog.unshift(entry);
+      if (historyLog.length > 10) historyLog.pop();
+
+      document.getElementById('historyList').innerHTML = historyLog.map(item => `<li>${item}</li>`).join('');
+    };
+
+    document.getElementById('calcBtn').addEventListener('click', calculateSquareFootage);
+
+    document.getElementById('quantity').addEventListener('wheel', e => {
+      e.preventDefault();
+      const step = e.deltaY < 0 ? 1 : -1;
+      let current = parseInt(e.target.value) || 1;
+      current = Math.max(1, current + step);
+      e.target.value = current;
+    });
+  </script>
+</body>
+</html>
